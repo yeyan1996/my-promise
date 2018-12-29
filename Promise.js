@@ -67,9 +67,9 @@ class MyPromise {
         this.status = PENDING
         this.value = undefined
         // 存储多个then方法的所有回调
-        // promise.then(res1=>{....})
-        // promise.then(res2=>{....})
-        // promise.then(res3=>{....})
+        // promise.then(res1=>{代码1....})
+        // promise.then(res2=>{代码2....})
+        // promise.then(res3=>{代码3....})
         this.resolvedCallbacks = []
         this.rejectedCallbacks = []
 
@@ -84,9 +84,7 @@ class MyPromise {
     then(onFulfilled, onRejected) {
         //如果then参数不是function就使用默认的函数传递Promise链
         (typeof onFulfilled === 'function') || (onFulfilled = value => value)
-        (typeof onRejected === 'function') || (onRejected = value => {
-            throw value
-        })
+        (typeof onRejected === 'function') || (onRejected = value => {throw value})
 
         //将then/catch的返回值包装成一个Promise,遵循PromiseA+规范
         let promise2 = new MyPromise((resolve, reject) => {
@@ -95,20 +93,20 @@ class MyPromise {
                 case PENDING: {
                     // 如果Promise还没有决议,则将相应的回调放入数组存储,等待resolve/reject执行
                     //这里使用setTimeout(()=>{},0)模拟微任务
+                    //Todo 这里pending状态需要用异步么?
                     setTimeout(() => {
                         this.resolvedCallbacks.push(
                             // 放入了回调函数,但这时候this.value值还是undefined
                             () => {
                                 onFulfilled(this.value)
                             }
-                        resolvePromise(promise2, x, resolve, reject)
                     )
                         this.rejectedCallbacks.push(
                             () => {
                                 onRejected(this.value)
                             }
                         )
-                        resolvePromise(promise2, x, resolve, reject)
+                        // resolvePromise(promise2, x, resolve, reject)
                     })
                     break;
                 }
@@ -117,16 +115,24 @@ class MyPromise {
                     //then方法提取状态为resolve/reject的Promise对象的值后,会将提取的值作为回调函数的参数将回调函数放入微任务队列中
                     //Js会通过EventLoop在当前宏任务完成后自动处理微任务队列中的任务
                     setTimeout(() => {
-                        let res = onFulfilled(this.value)
-                        resolvePromise(promise2, res, resolve, reject)
+                        try {
+                            let res = onFulfilled(this.value)
+                            resolvePromise(promise2, res, resolve, reject)
+                        } catch (e) {
+                            reject(e)
+                        }
                     })
                     break
                 }
 
                 case REJECTED: {
                     setTimeout(() => {
-                        let res = onRejected(this.value)
-                        resolvePromise(promise2, res, resolve, reject)
+                        try {
+                            let res = onRejected(this.value)
+                            resolvePromise(promise2, res, resolve, reject)
+                        } catch (e) {
+                            reject(e)
+                        }
                     })
                     break
                 }
