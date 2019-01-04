@@ -24,7 +24,6 @@ function resolvePromise(promise2, value, resolve, reject) {
                 if (called) return;
                 called = true;
                 //递归调用resolvePromise直到不是一个thenable对象随后resolve
-                // res为
                 resolvePromise(promise2, res, resolve, reject);
             },
             function onRejected(err) {
@@ -76,8 +75,8 @@ class MyPromise {
 
     then(onFulfilled, onRejected) {
         //如果then参数不是function就使用默认的函数继续向后传递Promise链
-        (typeof onFulfilled === 'function') || (onFulfilled = value => value)
-        (typeof onRejected === 'function') || (onRejected = value => {throw value})
+        (typeof onFulfilled === 'function') || (onFulfilled = res => res)
+        (typeof onRejected === 'function') || (onRejected = err => {throw err})
 
         //将then/catch的返回值包装成一个Promise
         let promise2 = new MyPromise((resolve, reject) => {
@@ -86,19 +85,21 @@ class MyPromise {
                 case PENDING: {
                     // 如果Promise还没有决议,则将相应的回调放入数组存储,等待resolve/reject执行后将回调放入微任务队列
                     //这里使用setTimeout(()=>{},0)模拟微任务
-
-                    this.resolvedCallbacks.push(
-                        //放入了一个函数，等待执行（执行这个箭头函数等同于执行onFulfilled/onRejected函数）
-                        // 放入了回调函数,但这时候this.value值还是undefined
-                        () => {
-                            onFulfilled(this.value)
-                        }
-                    )
-                    this.rejectedCallbacks.push(
-                        () => {
-                            onRejected(this.value)
-                        }
-                    )
+                    //pending状态也需要让promise是完全异步的,在宏任务完成后才执行
+                    setTimeout(() => {
+                        this.resolvedCallbacks.push(
+                            //放入了一个函数，等待执行（执行这个箭头函数等同于执行onFulfilled/onRejected函数）
+                            // 放入了回调函数,但这时候this.value值还是undefined
+                            () => {
+                                onFulfilled(this.value)
+                            }
+                        )
+                        this.rejectedCallbacks.push(
+                            () => {
+                                onRejected(this.value)
+                            }
+                        )
+                    })
                     // resolvePromise(promise2, x, resolve, reject)
                     break;
                 }
@@ -159,24 +160,13 @@ class MyPromise {
 }
 
 
-let promise = new MyPromise((resolve, reject) => {
-    resolve('456')
-})
-
-console.log(promise)
-
-
-promise
-    .then(res => {
-        console.log(res)
+console.log(
+    new MyPromise(function executor(resolve, reject) {
+        resolve(new MyPromise(resolve => {
+            resolve(1)
+        }))
     })
-// .then(
-//     res => console.log(res),
-//     res => {
-//         console.log('reject', res)
-//     }
-// )
+)
 
 
-console.log(123)
 
