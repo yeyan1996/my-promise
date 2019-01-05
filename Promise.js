@@ -22,8 +22,10 @@ function resolvePromise(promise2, value, resolve, reject) {
             // 传入onFulfilled/onRejected函数（此时这2个函数未执行）
             function onFulfilled(res) {
                 if (called) return;
+
                 called = true;
-                //递归调用resolvePromise直到不是一个thenable对象随后resolve
+                //递归调用resolvePromise直到传入的value不是一个Promise对象为止
+                // 传递promise2是为了通过闭包保留promise2
                 resolvePromise(promise2, res, resolve, reject);
             },
             function onRejected(err) {
@@ -91,16 +93,18 @@ class MyPromise {
                             //放入了一个函数，等待执行（执行这个箭头函数等同于执行onFulfilled/onRejected函数）
                             // 放入了回调函数,但这时候this.value值还是undefined
                             () => {
-                                onFulfilled(this.value)
+                                let res = onFulfilled(this.value)
+                                resolvePromise(promise2, res, resolve, reject)
+
                             }
                         )
                         this.rejectedCallbacks.push(
                             () => {
-                                onRejected(this.value)
+                                let err = onRejected(this.value)
+                                resolvePromise(promise2, err, resolve, reject)
                             }
                         )
                     })
-                    // resolvePromise(promise2, x, resolve, reject)
                     break;
                 }
 
@@ -108,6 +112,7 @@ class MyPromise {
                     //then方法提取状态为resolve/reject的Promise对象的值后,会将提取的值作为回调函数的参数将回调函数放入微任务队列中
                     //Js会通过EventLoop在当前宏任务完成后自动处理微任务队列中的任务
                     setTimeout(() => {
+
                         try {
                             let res = onFulfilled(this.value)
                             resolvePromise(promise2, res, resolve, reject)
@@ -137,36 +142,13 @@ class MyPromise {
         //返回一个promise
         return promise2
     }
-
-    // catch(cb) {
-    //
-    // }
-    // static resolve(value) {
-    //     //如果是thenable对象则展开一个
-    //     if (value.then) {
-    //
-    //     } else { //非promiseList就返回一个resolved的promise
-    //         setTimeout(() => {
-    //             return new MyPromise(function (resolve,reject) {
-    //                 resolve(value)
-    //             })
-    //         }, 0)
-    //     }
-    // }
-    //
-    // static reject(any) {
-    //     //
-    // }
+    catch(onRejected){
+        return this.then(null,onRejected);
+    }
 }
 
 
-console.log(
-    new MyPromise(function executor(resolve, reject) {
-        resolve(new MyPromise(resolve => {
-            resolve(1)
-        }))
-    })
-)
-
-
+let promise = new MyPromise(resolve => {
+    resolve(1)
+})
 
