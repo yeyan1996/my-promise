@@ -13,16 +13,16 @@ function resolvePromise(promise2, value, resolve, reject) {
         return reject(new TypeError('Chaining cycle detected for promise'));
     }
 
-
+    /**尝试展开Promise**/
     //value为thenable对象(会被认为是个Promise)
     //如果 value 处于pending，Promise 需保持为等待态直至 value 被执行或拒绝
     //如果 value 处于其他状态，则用相同的值处理 Promise
     if (value && value.then && typeof value.then === 'function') {
         value.then(
+            //定义如何展开这个Promise
             // 传入onFulfilled/onRejected函数（此时这2个函数未执行）
             function onFulfilled(res) {
                 if (called) return;
-
                 called = true;
                 //递归调用resolvePromise直到传入的value不是一个Promise对象为止
                 // 传递promise2是为了通过闭包保留promise2
@@ -112,7 +112,6 @@ class MyPromise {
                     //then方法提取状态为resolve/reject的Promise对象的值后,会将提取的值作为回调函数的参数将回调函数放入微任务队列中
                     //Js会通过EventLoop在当前宏任务完成后自动处理微任务队列中的任务
                     setTimeout(() => {
-
                         try {
                             let res = onFulfilled(this.value)
                             resolvePromise(promise2, res, resolve, reject)
