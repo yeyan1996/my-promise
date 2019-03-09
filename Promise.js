@@ -35,6 +35,7 @@ function resolvePromise(promise2, value, resolve, reject) {
             },
         )
     } else {
+        //如果value不是一个Promise，通过闭包的resolve函数决议then方法返回的promise2
         resolve(value)
     }
 }
@@ -86,16 +87,14 @@ class MyPromise {
 
                 case PENDING: {
                     // 如果Promise还没有决议,则将相应的回调放入数组存储,等待resolve/reject执行后将回调放入微任务队列
-                    //这里使用setTimeout(()=>{},0)模拟微任务
+                    //这里使用setTimeout模拟微任务
                     //pending状态也需要让promise是完全异步的,在宏任务完成后才执行
                     setTimeout(() => {
                         this.resolvedCallbacks.push(
-                            //放入了一个函数，等待执行（执行这个箭头函数等同于执行onFulfilled/onRejected函数）
-                            // 放入了回调函数,但这时候this.value值还是undefined
+                            // 放入回调函数,但这时候this.value值还是undefined
                             () => {
                                 let res = onFulfilled(this.value)
                                 resolvePromise(promise2, res, resolve, reject)
-
                             }
                         )
                         this.rejectedCallbacks.push(
@@ -113,6 +112,7 @@ class MyPromise {
                     //Js会通过EventLoop在当前宏任务完成后自动处理微任务队列中的任务
                     setTimeout(() => {
                         try {
+                            //首先会去执行用户定义的onFulfilled代码，将返回值赋值给res
                             let res = onFulfilled(this.value)
                             resolvePromise(promise2, res, resolve, reject)
                         } catch (e) {
@@ -137,7 +137,6 @@ class MyPromise {
 
             }
         })
-        // debugger
         //返回一个promise
         return promise2
     }
@@ -150,4 +149,3 @@ class MyPromise {
 let promise = new MyPromise(resolve => {
     resolve(1)
 })
-
