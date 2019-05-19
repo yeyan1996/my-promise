@@ -5,8 +5,7 @@ const REJECTED = 'rejected'
 
 //决议Promise
 function resolvePromise(promise2, value, resolve, reject) {
-    //排除可能既调resolve又调用reject情况
-    // 表示是否已经决议
+    // 防止作为返回值的 promise 可能既调resolve又调用reject情况
     let called;
     // 如果循环引用则reject
     if (value === promise2) {
@@ -20,11 +19,12 @@ function resolvePromise(promise2, value, resolve, reject) {
     if (value && value.then && typeof value.then === 'function') {
         value.then(
             //定义如何展开这个Promise
-            // 传入onFulfilled/onRejected函数（此时这2个函数未执行）
+            // 内部给 then 方法自定义了 onFulfilled/onRejected 函数，规定处理逻辑
+            // 当作为返回值的 promise 被决议后再决议这个 then 方法生成的 promise(promise2)
             function onFulfilled(res) {
                 if (called) return;
                 called = true;
-                //递归调用resolvePromise直到传入的value不是一个Promise对象为止
+                // 递归调用resolvePromise直到传入的value不是一个Promise对象为止
                 // 传递promise2是为了通过闭包保留promise2
                 resolvePromise(promise2, res, resolve, reject);
             },
@@ -53,7 +53,8 @@ class MyPromise {
             }
         }
         let reject = (err) => {
-            if (this.status === REJECTED) {
+            // 调用 reject 方法同样只可能是在 pending 状态
+            if (this.status === PENDING) {
                 this.status = REJECTED
                 this.value = err
                 this.rejectedCallbacks.map(cb => cb())
@@ -78,8 +79,10 @@ class MyPromise {
 
     then(onFulfilled, onRejected) {
         //如果then参数不是function就使用默认的函数继续向后传递Promise链
-        (typeof onFulfilled === 'function') || (onFulfilled = res => res)
-        (typeof onRejected === 'function') || (onRejected = err => {throw err})
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : res => res
+        onRejected = typeof onRejected === 'function' ? onRejected : err => {
+            throw err
+        }
 
         //将then/catch的返回值包装成一个Promise
         let promise2 = new MyPromise((resolve, reject) => {
@@ -87,29 +90,39 @@ class MyPromise {
 
                 case PENDING: {
                     // 如果Promise还没有决议,则将相应的回调放入数组存储,等待resolve/reject执行后将回调放入微任务队列
-                    //这里使用setTimeout模拟微任务
-                    //pending状态也需要让promise是完全异步的,在宏任务完成后才执行
-                    setTimeout(() => {
-                        this.resolvedCallbacks.push(
-                            // 放入回调函数,但这时候this.value值还是undefined
-                            () => {
+                    // pending状态需要同步调用，因为需要及时将回调放到callback中，不能异步执行否则会多次触发一些行为
+
+                    this.resolvedCallbacks.push(
+                        // 放入回调函数,但这时候this.value值还是undefined
+                        () => {
+                            try {
                                 let res = onFulfilled(this.value)
                                 resolvePromise(promise2, res, resolve, reject)
+                            } catch (e) {
+                                reject(e)
                             }
-                        )
-                        this.rejectedCallbacks.push(
-                            () => {
+                        }
+                    )
+
+
+                    this.rejectedCallbacks.push(
+                        () => {
+                            try {
                                 let err = onRejected(this.value)
                                 resolvePromise(promise2, err, resolve, reject)
+                            } catch (e) {
+                                reject(e)
                             }
-                        )
-                    })
+                        }
+                    )
+
                     break;
                 }
 
                 case RESOLVED: {
                     //then方法提取状态为resolve/reject的Promise对象的值后,会将提取的值作为回调函数的参数将回调函数放入微任务队列中
                     //Js会通过EventLoop在当前宏任务完成后自动处理微任务队列中的任务
+                    //这里使用setTimeout模拟微任务
                     setTimeout(() => {
                         try {
                             //首先会去执行用户定义的onFulfilled代码，将返回值赋值给res
@@ -129,6 +142,7 @@ class MyPromise {
                             let res = onRejected(this.value)
                             resolvePromise(promise2, res, resolve, reject)
                         } catch (e) {
+                            console.log(e)
                             reject(e)
                         }
                     })
@@ -140,12 +154,88 @@ class MyPromise {
         //返回一个promise
         return promise2
     }
-    catch(onRejected){
-        return this.then(null,onRejected);
+
+    catch(onRejected) {
+        return this.then(null, onRejected);
+    }
+
+    finally(callback){
+        return MyPromise.resolve(this).then(callback,callback)
+    }
+
+    static resolve(value) {
+        if (value instanceof this) {
+            return value
+        }
+        //规范中Promise.resolve必须是同步调用的
+        return new MyPromise((resolve) => {
+            resolve(value)
+        })
+    }
+
+    static reject(err) {
+        return new MyPromise((resolve, reject) => {
+            reject(err)
+        })
+    }
+
+    static all(arr) {
+        if(!Array.isArray(arr)) throw new Error('argument is not an Array')
+        return new MyPromise((resolve, reject) => {
+            let resolvedValues = []
+
+            let onResolve = (res) => {
+                resolvedValues.push(res)
+                if (resolvedValues.length === arr.length) {
+                    resolve(resolvedValues)
+                }
+            }
+
+            arr.map(item => MyPromise.resolve(item)).forEach(item => {
+                item.then(onResolve, reject)
+            })
+
+        })
+    }
+
+    static race(arr){
+        if(!Array.isArray(arr)) throw new Error('argument is not an Array')
+        return new MyPromise((resolve,reject)=>{
+            arr.map(item => MyPromise.resolve(item)).forEach(item=>{
+                item.then(resolve,reject)
+            })
+        })
     }
 }
 
 
-let promise = new MyPromise(resolve => {
-    resolve(1)
+let promise = new MyPromise((resolve,reject)=>{
+    setTimeout(() => {
+        reject(1)
+    }, 500)
 })
+
+let promise2 = new MyPromise((resolve, reject) => {
+    setTimeout(() => {
+        resolve(2)
+    }, 2000)
+})
+
+
+let promise3 = new MyPromise((resolve, reject) => {
+    setTimeout(() => {
+        resolve(3)
+    }, 1000)
+})
+
+
+let promise4 = new MyPromise((resolve, reject) => {
+    setTimeout(() => {
+        resolve(4)
+    }, 5500)
+})
+
+
+// MyPromise.all([promise2, promise3, promise4]).then(res => console.log(res), err => console.log(err))
+// MyPromise.race([promise2, promise3, promise4]).then(res => console.log(res), err => console.log(err))
+// promise.then(res=> console.log(res),err=> console.log(err)).finally(()=> console.log('completed')).then(res=> console.log(res))
