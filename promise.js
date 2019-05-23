@@ -164,12 +164,18 @@ class MyPromise {
     }
 
     static resolve(value) {
+        // promise 对象同步展开，直接返回
         if (value instanceof this) {
             return value
         }
-        //规范中Promise.resolve必须是同步调用的
-        return new MyPromise((resolve) => {
-            resolve(value)
+        return new MyPromise((resolve,reject) => {
+            // thenable 对象需要异步展开
+           if(value && value.then && typeof value.then === 'function'){
+               value.then(resolve,reject)
+           }else{
+               // 除了前2种情况，其余情况都是同步生成一个 resolved 状态的 promise 对象
+               resolve(value)
+           }
         })
     }
 
@@ -238,4 +244,4 @@ let promise4 = new MyPromise((resolve, reject) => {
 
 // MyPromise.all([promise2, promise3, promise4]).then(res => console.log(res), err => console.log(err))
 // MyPromise.race([promise2, promise3, promise4]).then(res => console.log(res), err => console.log(err))
-// promise.then(res=> console.log(res),err=> console.log(err)).finally(()=> console.log('completed')).then(res=> console.log(res))
+promise.then(res=> console.log(res),err=> console.log(err)).finally(()=> console.log('completed')).then(res=> console.log(res))
