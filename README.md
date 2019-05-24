@@ -4,4 +4,6 @@
 
 在 a+ 规范的基础上，扩展了 Promise 的静态方法以及 finally 的实例方法
 
+测试截图:
 
+![](./img/img.png)
