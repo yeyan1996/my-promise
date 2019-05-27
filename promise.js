@@ -177,8 +177,8 @@ class Promise {
         return this.then(null, onRejected);
     }
 
-    // finally 同样是在微任务队列中执行的
     // finally 的 callback 不会接受任何参数
+    // finally 的回调如果返回一个 promise，那 finally 会等待回调中的 promise 决议完成再决议自身
     // finally 返回一个 promise，并且 promise 的值是 finally 之前第一个非 finally 返回的 promise 解析后的值
     // (即 finally 会把前一个 promise 的值传递下去)
     finally(callback) {
