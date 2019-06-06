@@ -182,6 +182,7 @@ class Promise {
     // finally 返回一个 promise，并且 promise 的值是 finally 之前第一个非 finally 返回的 promise 解析后的值
     // (即 finally 会把前一个 promise 的值传递下去)
     finally(callback) {
+         if (!isFunction(callback)) callback = () => {}
         return this.then(
             (res) => Promise.resolve(callback()).then(() => res),
             (err) => Promise.resolve(callback()).then(() => {
