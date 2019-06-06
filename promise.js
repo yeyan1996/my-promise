@@ -240,7 +240,7 @@ class Promise {
     static race(iterator) {
         if (!iterator[Symbol.iterator]) throw new Error('argument is not iterable')
         return new Promise((resolve, reject) => { // 如果参数长度为0，则返回一个永远 pending 状态的 promise
-            if (iterator.length) {
+            if (!iterator.length) {
                 return
             }
             iterator.map(item => Promise.resolve(item)).forEach(promise => {
