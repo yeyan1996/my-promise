@@ -2,6 +2,7 @@ const PENDING = 'pending'
 const RESOLVED = 'resolved'
 const REJECTED = 'rejected'
 
+const isFunction = obj => typeof obj === 'function'
 
 //决议 promise
 function resolvePromise(promise2, value, resolve, reject) {
