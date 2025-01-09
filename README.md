@@ -1,9 +1,9 @@
 # my-promise
 
-> 学习就好比是座大山，人们沿着不同的路登山，分享着自己看到的风景。你不一定能看到别人看到的风景，体会到别人的心情。只有自己去登山，才能看到不一样的风景，体会才更加深刻
+> Learning is like climbing a mountain - people take different paths up and share the scenery they see. You may not see the same views or feel the same emotions as others. Only by climbing yourself can you see different perspectives and gain deeper understanding.
 
-在 a+ 规范的基础上，扩展了 Promise 的静态方法以及 finally 的实例方法
+Extended Promise static methods and finally instance method based on the A+ specification
 
-测试截图:
+Test screenshot:
 
-![](./img/img.png)
+![image](https://s2.loli.net/2025/01/09/NMAsb2tiFhWKjr8.png)
