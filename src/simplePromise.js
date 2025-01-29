@@ -1,4 +1,8 @@
 // three status: pending, fulfilled, rejected
+// status rotation:
+// resolve() -> fulfilled or rejected
+// reject() -> rejected
+
 const FULFILLED = 'fulfilled'
 const REJECTED = 'rejected'
 const PENDING = 'pending'
@@ -6,13 +10,13 @@ const PENDING = 'pending'
 const isFunction = value => Object.prototype.toString.call(value) === '[object Function]'
 const isThenable = value => value instanceof SimplePromise || (isFunction(value?.then))
 
-function resolvePromise(value, previousResolve, previousReject) {
+function resolvePromise(value, resolvePreviousPromise, rejectPreviousPromise) {
   // if the return value of onFulfilled is a promise, resolve the promise
   if (isThenable(value)) {
-    value.then(previousResolve, previousReject)
+    value.then(resolvePreviousPromise, rejectPreviousPromise)
   }
   else {
-    previousResolve(value)
+    resolvePreviousPromise(value)
   }
 }
 
@@ -34,6 +38,7 @@ class SimplePromise {
       }
       this.#__status__ = FULFILLED
       this.#__value__ = value
+      // push all the callbacks into microtask queue when invoking resolve function
       this.fulfillCallbacks.forEach((callback) => {
         queueMicrotask(callback)
       })
@@ -48,7 +53,7 @@ class SimplePromise {
         queueMicrotask(callback)
       })
     }
-
+    // call the callback function immediately
     callback?.(resolve, reject)
   }
 
@@ -56,6 +61,7 @@ class SimplePromise {
     return new SimplePromise((resolve, reject) => {
       const callback = () => {
         try {
+          // both fulfilled and rejected status will resolve the promise
           if (this.#__status__ === FULFILLED) {
             const value = onFulfilled?.(this.#__value__)
             resolvePromise(value, resolve, reject)
@@ -70,10 +76,13 @@ class SimplePromise {
           reject(e)
         }
       }
+
+      // push into microtask queue if promise is already resolved
       if ([FULFILLED, REJECTED].includes(this.#__status__)) {
         queueMicrotask(callback)
       }
       else if (this.#__status__ === PENDING) {
+        // register callback for later execution
         this.fulfillCallbacks.push(callback)
         this.rejectCallbacks.push(callback)
       }
