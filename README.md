@@ -2,6 +2,8 @@
 
 A JavaScript Promise implementation with two variants.
 
+![](https://s2.loli.net/2025/01/29/K58E6x9JvHGIOnk.png)
+
 ## Variants
 
 ### 1. SimplePromise
