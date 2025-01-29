@@ -1,5 +1,5 @@
 {
-  "name": "my-promise",
+  "name": "promise",
   "version": "1.0.0",
   "license": "MIT",
   "homepage": "https://github.com/yeyan1996/my-promise#readme",
@@ -10,14 +10,16 @@
   "bugs": {
     "url": "https://github.com/yeyan1996/my-promise/issues"
   },
-  "main": "promise.js",
   "scripts": {
-    "test": "promises-aplus-tests promise.js"
+    "test": "promises-aplus-tests src/myPromise.js",
+    "test:simplePromise": "jest src/simplePromise.test.js"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^3.12.2",
-    "eslint": "^9.17.0",
-    "eslint-plugin-format": "^1.0.0",
-    "promises-aplus-tests": "^2.1.2"
+    "@antfu/eslint-config": "^3.7.3",
+    "eslint": "^8.56.0",
+    "eslint-plugin-format": "^0.1.2",
+    "promises-aplus-tests": "^2.1.2",
+    "@jest/globals": "^29.7.0",
+    "jest": "^29.7.0"
   }
 }

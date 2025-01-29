@@ -60,7 +60,7 @@ function resolvePromise(promise2, value, resolve, reject) {
   }
 }
 
-class Promise {
+class MyPromise {
   constructor(fn) {
     const resolve = (res) => {
       // resolve method can only be called once when promise is in pending state, state cannot be changed after resolution
@@ -107,7 +107,7 @@ class Promise {
         }
 
     // Wrap the return value of then/catch into a promise, because then/catch ultimately returns a promise
-    const promise2 = new Promise((resolve, reject) => {
+    const promise2 = new MyPromise((resolve, reject) => {
       switch (this.status) {
         case PENDING: {
           // If promise is not resolved, store corresponding callbacks in array, waiting for resolve/reject to put callbacks in microtask queue
@@ -194,8 +194,8 @@ class Promise {
     if (!isFunction(callback))
       callback = () => {}
     return this.then(
-      res => Promise.resolve(callback()).then(() => res),
-      err => Promise.resolve(callback()).then(() => {
+      res => MyPromise.resolve(callback()).then(() => res),
+      err => MyPromise.resolve(callback()).then(() => {
         throw err
       }),
     )
@@ -206,7 +206,7 @@ class Promise {
     if (value instanceof this) {
       return value
     }
-    return new Promise((resolve, reject) => {
+    return new MyPromise((resolve, reject) => {
       // thenable object needs to be expanded asynchronously
       if (value && value.then && typeof value.then === 'function') {
         value.then(resolve, reject)
@@ -219,7 +219,7 @@ class Promise {
   }
 
   static reject(err) {
-    return new Promise((resolve, reject) => {
+    return new MyPromise((resolve, reject) => {
       reject(err)
     })
   }
@@ -228,7 +228,7 @@ class Promise {
     // all's parameter must be an iterable data structure
     if (!iterator[Symbol.iterator])
       throw new Error('argument is not iterable')
-    return new Promise((resolve, reject) => {
+    return new MyPromise((resolve, reject) => {
       // If parameter length is 0, directly return a synchronously resolved state promise
       if (!iterator.length) {
         resolve()
@@ -243,7 +243,7 @@ class Promise {
         }
       }
 
-      iterator.map(item => Promise.resolve(item)).forEach((promise) => {
+      iterator.map(item => MyPromise.resolve(item)).forEach((promise) => {
         promise.then(onResolve, reject)
       })
     })
@@ -252,31 +252,28 @@ class Promise {
   static race(iterator) {
     if (!iterator[Symbol.iterator])
       throw new Error('argument is not iterable')
-    return new Promise((resolve, reject) => { // If parameter length is 0, return a forever pending state promise
+    return new MyPromise((resolve, reject) => { // If parameter length is 0, return a forever pending state promise
       if (!iterator.length) {
         return
       }
-      iterator.map(item => Promise.resolve(item)).forEach((promise) => {
+      iterator.map(item => MyPromise.resolve(item)).forEach((promise) => {
         promise.then(resolve, reject)
       })
     })
   }
 }
 
-try {
-  module.exports = Promise
-
-  // Test code
-  Promise.defer = Promise.deferred = function () {
+// create adaptor for promise A+ test suite
+function createAdaptor() {
+  MyPromise.defer = MyPromise.deferred = function () {
     const dfd = {}
-    dfd.promise = new Promise((resolve, reject) => {
+    dfd.promise = new MyPromise((resolve, reject) => {
       dfd.resolve = resolve
       dfd.reject = reject
     })
     return dfd
   }
+  module.exports = MyPromise
 }
-catch (e) {
-  console.warn(e)
-  console.warn('Please use node to run test code')
-}
+
+createAdaptor()

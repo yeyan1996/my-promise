@@ -1,9 +1,39 @@
-# my-promise
+# Implement promise
 
-> Learning is like climbing a mountain - people take different paths up and share the scenery they see. You may not see the same views or feel the same emotions as others. Only by climbing yourself can you see different perspectives and gain deeper understanding.
+A JavaScript Promise implementation with two variants.
 
-Extended Promise static methods and finally instance method based on the A+ specification
+## Variants
 
-Test screenshot:
+### 1. SimplePromise
 
-![image](https://s2.loli.net/2025/01/09/NMAsb2tiFhWKjr8.png)
+A basic Promise implementation for learning purposes that includes:
+
+- `then()` (supports chaining and promise returns)
+- `catch()`
+- `resolve()`
+- `reject()`
+
+To run tests:
+
+```bash
+pnpm run test:simplePromise
+```
+
+### 2. MyPromise
+
+A Promises/A+ compliant implementation that includes:
+
+- `then()` (supports chaining, promise returns, and circular promises)
+- `catch()`
+- `finally()`
+- Static Methods:
+  - `all()`
+  - `race()`
+  - `resolve()`
+  - `reject()`
+
+To run tests:
+
+```bash
+pnpm run test
+```
