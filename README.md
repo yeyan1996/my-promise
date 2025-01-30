@@ -12,14 +12,16 @@ A basic Promise implementation for learning purposes that includes:
 
 - `then()` (supports chaining and promise returns)
 - `catch()`
-- `resolve()`
-- `reject()`
+- Static Methods:
+  - `resolve()`
+  - `reject()`
 
 To run tests:
 
 ```bash
 pnpm run test:simplePromise
 ```
+> Test cases are forked from https://www.youtube.com/watch?v=1l4wHWQCCIc
 
 ### 2. MyPromise
 
